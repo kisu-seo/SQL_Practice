@@ -53,3 +53,34 @@ SELECT * FROM customers;
 SELECT * FROM orders;
 SELECT orderNumber, country FROM orders INNER JOIN customers 
 ON orders.customerNumber = customers.customerNumber WHERE customers.country = "USA";
+
+# customers 의 country 컬럼을 이용해 북미(Canada, USA), 비북미를 출력하는 컬럼 생성
+SELECT country, CASE WHEN country IN ("Canada", "USA") THEN "North America"
+ELSE "Others" END AS region FROM customers;
+
+# customers 의 country 컬럼을 이용해 북미(Canada, USA), 비북미를 출력하는 컬럼을 생성하고
+# 북미, 비북미 거주 고객의 수 계산
+SELECT CASE WHEN country IN ("Canada", "USA") THEN "North America"
+ELSE "Others" END AS region,
+COUNT(customerNumber) AS n_customers
+FROM customers
+GROUP BY 1;
+
+# products 테이블에서 buyprice 컬럼으로 순위 매기기(오름차순)(ROW_NUMBER, RANK, DENSE RANK 사용)
+SELECT buyPrice,
+ROW_NUMBER() OVER(ORDER BY buyPrice) AS RowNumber,
+RANK() OVER(ORDER BY buyPrice) AS RNK,
+DENSE_RANK() OVER(ORDER BY buyPrice) AS DenseRank
+FROM products;
+
+# products 테이블의 productline 별로 순위 매기기(buyPrice 컬럼 기준, 오름차순)(ROW_NUMBER, RANK, DENSE RANK 사용)
+SELECT buyPrice,
+ROW_NUMBER() OVER(PARTITION BY productLine ORDER BY buyPrice) AS RowNumber,
+RANK() OVER(PARTITION BY productLine ORDER BY buyPrice) AS RNK,
+DENSE_RANK() OVER(PARTITION BY productLine ORDER BY buyPrice) AS DenseRank
+FROM products;
+
+# customers 와 orders 를 이용해 USA 거주자의 주문 번호 출력
+SELECT orderNumber FROM orders
+WHERE customerNumber IN (SELECT customerNumber FROM customers
+WHERE country = "USA");
