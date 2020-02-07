@@ -90,3 +90,25 @@ LEFT JOIN orderdetails AS B
 ON A.orderNumber = B.orderNumber
 GROUP BY 1
 ORDER BY 1;
+
+# 국가별, 도시별 매출액
+SELECT * FROM orders as A
+LEFT JOIN orderdetails as B
+ON A.orderNumber = B.orderNumber
+LEFT JOIN customers as C
+ON A.customerNumber = C.customerNumber;
+
+SELECT country, city, priceEach * quantityOrdered FROM orders as A
+LEFT JOIN orderdetails as B
+ON A.orderNumber = B.orderNumber
+LEFT JOIN customers as C
+ON A.customerNumber = C.customerNumber
+;
+
+SELECT country, city, SUM(priceEach * quantityOrdered) AS SALES
+FROM orders AS A
+LEFT JOIN orderdetails AS B
+ON A.orderNumber = B.orderNumber
+LEFT JOIN customers AS C
+ON A.customerNumber = C.customerNumber
+GROUP BY 1,2;
