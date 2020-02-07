@@ -91,6 +91,7 @@ ON A.orderNumber = B.orderNumber
 GROUP BY 1
 ORDER BY 1;
 
+
 # 국가별, 도시별 매출액
 SELECT * FROM orders as A
 LEFT JOIN orderdetails as B
@@ -111,4 +112,49 @@ LEFT JOIN orderdetails AS B
 ON A.orderNumber = B.orderNumber
 LEFT JOIN customers AS C
 ON A.customerNumber = C.customerNumber
-GROUP BY 1,2;
+GROUP BY 1,2
+ORDER BY 1,2;
+
+
+# 북미(USA, Canada) vs 비북미 매출액 비교
+SELECT CASE WHEN country IN ("USA", "Canada") THEN "North America"
+Else "Others" END country_group
+FROM customers;
+
+SELECT CASE WHEN country IN ("USA", "Canada") THEN "North America"
+ELSE "Others" END country_group,
+SUM(priceEach * quantityOrdered) AS sales
+FROM orders as A
+LEFT JOIN orderdetails as B
+ON A.orderNumber = B.orderNumber
+LEFT JOIN customers as C
+ON A.orderNumber = B.orderNumber
+GROUP BY 1
+ORDER BY 2 DESC; # DESC 는 높은 순으로 정렬 
+
+
+# 매출 TOP 5 국가 및 매출
+CREATE TABLE classicmodels.STAT AS
+SELECT country, SUM(priceEach * quantityOrdered) AS sales
+FROM orders AS A 
+LEFT JOIN orderdetails AS B
+ON A.orderNumber = B.orderNumber
+LEFT JOIN customers AS C
+ON A.customerNumber = C.customerNumber
+GROUP BY 1
+ORDER BY 2 DESC;
+
+SELECT * FROM STAT;
+
+SELECT country, sales,
+DENSE_RANK() OVER(ORDER BY sales DESC) AS RNK
+FROM STAT;
+
+CREATE TABLE STAT_RNK AS
+SELECT country, sales,
+DENSE_RANK() OVER(ORDER BY sales DESC) AS RNK
+FROM STAT;
+
+SELECT * FROM STAT_RNK;
+
+SELECT * FROM STAT_RNK WHERE RNK BETWEEN 1 AND 5;
