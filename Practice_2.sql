@@ -158,3 +158,70 @@ FROM STAT;
 SELECT * FROM STAT_RNK;
 
 SELECT * FROM STAT_RNK WHERE RNK BETWEEN 1 AND 5;
+
+
+# Subquery
+SELECT * FROM
+(SELECT country, sales, DENSE_RANK() OVER(ORDER BY sales DESC) AS RNK FROM 
+(SELECT C.country, SUM(priceEach * quantityOrdered) as sales
+FROM orders AS A
+LEFT JOIN
+orderdetails AS B
+ON A.orderNumber = B.orderNumber
+LEFT JOIN
+customers AS C
+ON A.customerNumber = C.customerNumber
+
+GROUP BY 1) A) A
+WHERE RNK <= 5;
+
+
+# 재구매율
+SELECT
+A.customerNumber,
+A.orderDate,
+B.customerNumber,
+B.orderDate
+FROM orders AS A
+LEFT JOIN orders AS B
+ON A.customerNumber = B.customerNumber AND
+SUBSTR(A.orderDate,1,4) = SUBSTR(B.orderDate,1,4) -1
+;
+
+
+# 국가별 2004, 2005 Retention Rate(%)
+SELECT
+C.country,
+SUBSTR(A.orderDate,1,4) AS YY,
+COUNT(DISTINCT A.customerNumber) AS BU_1,
+COUNT(DISTINCT B.customerNumber) AS BU_2,
+COUNT(DISTINCT B.customerNumber) / COUNT(DISTINCT A.customerNumber) AS RETENTION_RATE
+FROM orders AS A
+LEFT JOIN orders AS B
+ON A.customerNumber = B.customerNumber AND
+SUBSTR(A.orderDate,1,4) = SUBSTR(B.orderDate,1,4) -1
+LEFT JOIN customers AS C
+ON A.customerNumber = C.customerNumber
+GROUP BY 1,2;
+
+
+# Best Seller
+CREATE TABLE PRODUCT_SALES AS
+SELECT
+D.productName, SUM(priceEach * quantityOrdered) AS sales
+FROM orders AS A
+LEFT JOIN customers AS B
+ON A.customerNumber = B.customerNumber
+LEFT JOIN orderdetails AS C
+ON A.orderNumber = C.orderNumber
+LEFT JOIN products AS D
+ON C.productCode = D.productCode
+WHERE B.country = "USA"
+GROUP BY 1;
+
+SELECT * FROM
+(SELECT *,
+ROW_NUMBER() OVER(ORDER BY sales DESC) AS RNK
+FROM PRODUCT_SALES) AS A
+WHERE RNK <= 5
+ORDER BY RNK;
