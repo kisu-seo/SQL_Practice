@@ -225,3 +225,77 @@ ROW_NUMBER() OVER(ORDER BY sales DESC) AS RNK
 FROM PRODUCT_SALES) AS A
 WHERE RNK <= 5
 ORDER BY RNK;
+
+
+# Churn Rate(%) 구하기
+SELECT MAX(orderDate) AS MX_ORDER
+FROM orders;
+
+SELECT customerNumber, MAX(orderDate) AS MX_ORDER
+FROM orders
+GROUP BY 1;
+
+SELECT
+customerNumber, MX_ORDER, "2005-06-01", DATEDIFF("2005-06-01", MX_ORDER) AS DIFF
+FROM
+(SELECT customerNumber, MAX(orderDate) AS MX_ORDER
+FROM orders
+GROUP BY 1) AS BASE
+;
+
+SELECT *,
+CASE WHEN DIFF >= 90 THEN "CHURN" ELSE "NON-CHURN" END AS CHURN_TYPE
+FROM
+(SELECT
+customerNumber, MX_ORDER, "2005-06-01", DATEDIFF("2005-06-01", MX_ORDER) AS DIFF
+FROM
+(SELECT customerNumber, MAX(orderDate) AS MX_ORDER
+FROM orders
+GROUP BY 1) BASE) BASE
+
+SELECT CASE WHEN DIFF >= 90 THEN "CHURN" ELSE "NON-CHURN" END AS CHURN_TYPE,
+COUNT(DISTINCT customerNumber) AS N_CUS
+FROM
+(SELECT customerNumber,
+MX_ORDER,
+"2005-06-01",
+DATEDIFF("2005-06-01", MX_ORDER) AS DIFF
+FROM
+(SELECT customerNumber,
+MAX(orderDate) AS MX_ORDER
+FROM orders
+GROUP
+BY 1) BASE) BASE
+GROUP BY 1;
+
+
+# Churn 고객이 가장 많이 구매한 Productline
+CREATE TABLE CHURN_LIST AS
+SELECT CASE WHEN DIFF >= 90 THEN "CHURN" ELSE "NON-CHURN" END AS CHURN_TYPE,
+customerNumber
+FROM
+(SELECT customerNumber, MX_ORDER, "2005-06-01" AS END_POINT,
+DATEDIFF("2005-06-01", MX_ORDER) AS DIFF
+FROM
+(SELECT customerNumber, MAX(orderDate) AS MX_ORDER
+FROM orders
+GROUP BY 1) BASE) BASE;
+
+SELECT C.productLine, COUNT(DISTINCT B.customerNumber) AS BU
+FROM orderdetails AS A
+LEFT JOIN orders AS B
+ON A.orderNumber = B.orderNumber
+LEFT JOIN products AS C
+ON A.productCode = C.productCode
+GROUP BY 1;
+
+SELECT D.CHURN_TYPE, C.productLine, COUNT(DISTINCT B.customerNumber) AS BU
+FROM orderdetails AS A
+LEFT JOIN orders AS B
+ON A.orderNumber = B.orderNumber
+LEFT JOIN products AS C
+ON A.productCode = C.productCode
+LEFT JOIN CHURN_LIST AS D
+ON B.customerNumber = D.customerNumber
+GROUP BY 1,2
+ORDER BY 1,3 DESC;
