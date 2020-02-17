@@ -1,0 +1,170 @@
+SHOW DATABASES;
+USE mydata;
+SHOW TABLES;
+
+# 요인별 생존 여부 관계
+## 1) 성별
+SELECT *
+FROM titanic LIMIT 10;
+
+# - 중복 여부 확인
+SELECT COUNT(passengerid) AS N_PASSENGERS,
+COUNT(DISTINCT passengerid) AS N_D_PSSENGERS
+FROM titanic;
+
+# - 성별에 따른 승객 수와 생존자 수
+SELECT SEX,
+COUNT(passengerid) AS N_PASSENGERS,
+SUM(survived) AS N_SURVIVED
+FROM titanic
+GROUP BY 1;
+
+# - 성별 탑승객 수와 생존자 수의 비중
+SELECT SEX,
+COUNT(passengerid) AS N_PASSENGERS,
+SUM(survived) AS N_SURVIVED,
+SUM(survived) / COUNT(passengerid) AS SURVIVED_RATIO
+FROM titanic
+GROUP BY 1;
+
+## 2) 연령, 성별
+SELECT FLOOR(AGE/10)*10 AS AGEBAND,
+AGE
+FROM titanic;
+
+# - 연령별 탑승객 수와 생존자 수, 생존율
+SELECT FLOOR(AGE/10) * 10 AS AGEBAND,
+COUNT(passengerid) AS N_PASSENGERS,
+SUM(survived) AS N_SURVIVED,
+SUM(survived) / COUNT(passengerid) AS SURVIVED_RATE
+FROM titanic
+GROUP BY 1
+ORDER BY 1;
+
+# - 연령별, 성별 탑승객 수와 생존자 수, 생존율
+SELECT FLOOR(AGE/10) * 10 AS AGEBAND,
+SEX,
+COUNT(passengerid) AS N_PASSENGERS,
+SUM(survived) AS N_SURVIVED,
+SUM(survived) / COUNT(passengerid) AS SURVIVED_RATE
+FROM titanic
+GROUP BY 1,2
+ORDER BY 2,1;
+
+# - 위 테이블 결과를 남성 여성으로 구분
+SELECT FLOOR(AGE/10) * 10 AS AGEBAND,
+SEX,
+COUNT(passengerid) AS N_PASSENGERS,
+SUM(survived) AS N_SURVIVED,
+SUM(survived) / COUNT(passengerid) AS SURVIVED_RATE
+FROM titanic
+GROUP BY 1,2
+HAVING SEX = "male";
+
+SELECT FLOOR(AGE/10) * 10 AS AGEBAND,
+SEX,
+COUNT(passengerid) AS N_PASSENGERS,
+SUM(survived) AS N_SURVIVED,
+SUM(survived) / COUNT(passengerid) AS SURVIVED_RATE
+FROM titanic
+GROUP BY 1,2
+HAVING SEX = "female";
+
+SELECT A.AGEBAND,
+A.SURVIVED_RATE AS MALE_SURVIVED_RATE,
+B.SURVIVED_RATE AS FEMALE_SURVIVED_RATE,
+B.SURVIVED_RATE - A.SURVIVED_RATE AS SURVIVED_RATE_DIFF
+FROM
+(SELECT FLOOR(AGE/10) * 10 AS AGEBAND,
+SEX,
+COUNT(passengerid) AS N_PASSENGERS,
+SUM(survived) AS N_SURVIVED,
+SUM(survived) / COUNT(passengerid) AS SURVIVED_RATE
+FROM titanic
+GROUP BY 1,2
+HAVING SEX = "male") A
+LEFT
+JOIN
+(SELECT FLOOR(AGE/10) * 10 AS AGEBAND,
+SEX,
+COUNT(passengerid) AS N_PASSENGERS,
+SUM(survived) AS N_SURVIVED,
+SUM(survived) / COUNT(passengerid) AS SURVIVED_RATE
+FROM titanic
+GROUP BY 1,2
+HAVING SEX = "female") B
+ON A.AGEBAND = B.AGEBAND
+ORDER BY A.AGEBAND
+;
+
+## 3) Pclass(객실 등급)
+SELECT DISTINCT pclass
+FROM titanic;
+
+# - 객실 등급별 승객 수, 생존자 수, 생존율
+SELECT Pclass,
+COUNT(passengerid) AS N_PASSENGERS,
+SUM(survived) AS N_SURVIVED,
+SUM(survived) / COUNT(passengerid) AS SURVIVED_RATE
+FROM titanic
+GROUP BY 1
+ORDER BY 1;
+
+# - 객실 등급, 연령, 성별을 조합한 생존율
+SELECT Pclass,
+SEX,
+COUNT(passengerid) AS N_PASSENGERS,
+SUM(survived) AS N_SURVIVED,
+SUM(survived) / COUNT(passengerid) AS SURVIVED_RATE
+FROM titanic
+GROUP BY 1,2
+ORDER BY 2,1;
+
+SELECT Pclass,
+SEX,
+FLOOR(AGE / 10) * 10 AS AGEBAND,
+COUNT(passengerid) AS N_PASSENGERS,
+SUM(survived) AS N_SURVIVED,
+SUM(survived) / COUNT(passengerid) AS SURVIVED_RATE
+FROM titanic
+GROUP BY Pclass, SEX, AGEBAND
+ORDER BY 2,1
+;
+
+# EMBARKED
+## 1) 승선 항구별 승객 수
+SELECT EMBARKED,
+COUNT(passengerid) AS N_PASSENGERS
+FROM titanic
+GROUP BY 1
+ORDER BY 1;
+
+## 2) 승선 항구별, 성별 승객 수
+SELECT EMBARKED,
+SEX,
+COUNT(passengerid) AS N_PASSENGERS
+FROM titanic
+GROUP BY 1,2
+ORDER BY 1,2;
+
+## 3) 승선 항구별, 성별 승객 비중
+
+SELECT A.EMBARKED,
+B.SEX,
+A.N_PASSENGERS AS PASSENGERS_TOT,
+B.N_PASSENGERS / A.N_PASSENGERS AS PASSENGERS_RATIO
+FROM
+(SELECT EMBARKED,
+COUNT(passengerid) AS N_PASSENGERS
+FROM titanic
+GROUP BY 1) A
+LEFT
+JOIN
+(SELECT EMBARKED,
+SEX,
+COUNT(passengerid) AS N_PASSENGERS
+FROM titanic
+GROUP BY 1,2) B
+ON A.EMBARKED = B.EMBARKED
+ORDER BY EMBARKED, SEX
+;
